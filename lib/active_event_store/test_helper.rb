@@ -4,7 +4,8 @@ module ActiveEventStore
   module TestHelper
 
     class EventPublishedMatcher
-      attr_reader :attributes
+      attr_reader :attributes,
+                  :matching_events
 
       def initialize(expected_event_class, store: nil, with: nil, exactly: nil, at_least: nil, at_most: nil, refute: false)
         @event_class = expected_event_class
@@ -42,9 +43,9 @@ module ActiveEventStore
           block.call
         end
 
-        matching_events, unmatching_events = partition_events(events)
+        @matching_events, @unmatching_events = partition_events(events)
 
-        mismatch_message = count_mismatch_message(matching_events.size)
+        mismatch_message = count_mismatch_message(@matching_events.size)
 
         unless mismatch_message.nil?
           expectations = [
@@ -61,8 +62,8 @@ module ActiveEventStore
 
           expectations << expectations.pop + ', but'
 
-          expectations << if unmatching_events.any?
-            unmatching_events.inject("published the following events instead:") do |msg, unmatching_event|
+          expectations << if @unmatching_events.any?
+            @unmatching_events.inject("published the following events instead:") do |msg, unmatching_event|
               msg + "\n  #{unmatching_event.inspect}"
             end
           else
@@ -150,6 +151,8 @@ module ActiveEventStore
       if (msg = matcher.matches?(block))
         fail(msg)
       end
+
+      return  matcher.matching_events
     end
 
     def refute_event_published(expected_event, store: nil, with: nil, exactly: nil, at_least: nil, at_most: nil, &block)

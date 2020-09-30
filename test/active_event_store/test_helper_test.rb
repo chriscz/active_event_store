@@ -16,9 +16,13 @@ class TestHelperTest < Minitest::Test
   end
 
   def test_assert_event_published
-    assert_event_published(ActiveEventStore::TestEvent) do
+    events = assert_event_published(ActiveEventStore::TestEvent) do
       ActiveEventStore.publish(event)
     end
+
+    assert events.length == 1
+    assert_includes events, event
+
   end
 
   def test_assert_event_published_with_one_attribute
