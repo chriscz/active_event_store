@@ -2,31 +2,30 @@
 
 module ActiveEventStore
   module TestHelper
-
     class EventPublishedMatcher
       attr_reader :attributes,
-                  :matching_events
+        :matching_events
 
       def initialize(expected_event_class, store: nil, with: nil, exactly: nil, at_least: nil, at_most: nil, refute: false)
         @event_class = expected_event_class
-        @store       = store || ActiveEventStore.event_store
-        @attributes  = with
-        @refute      = refute
+        @store = store || ActiveEventStore.event_store
+        @attributes = with
+        @refute = refute
 
         count_expectations = {
-          exactly:  exactly,
-          at_most:  at_most,
-          at_least: at_least,
+          exactly: exactly,
+          at_most: at_most,
+          at_least: at_least
         }.reject { |_, v| v.nil? }
 
         if count_expectations.length > 1
           raise ArgumentError("Only one of :exactly, :at_least or :at_most can be specified")
         elsif count_expectations.length == 0
           @count_expectation_kind = :at_least
-          @expected_count         = 1
+          @expected_count = 1
         else
           @count_expectation_kind = count_expectations.keys.first
-          @expected_count         = count_expectations.values.first
+          @expected_count = count_expectations.values.first
         end
       end
 
@@ -60,7 +59,7 @@ module ActiveEventStore
 
           expectations << "with attributes #{attributes.inspect}" unless attributes.nil?
 
-          expectations << expectations.pop + ', but'
+          expectations << expectations.pop + ", but"
 
           expectations << if @unmatching_events.any?
             @unmatching_events.inject("published the following events instead:") do |msg, unmatching_event|
@@ -70,7 +69,7 @@ module ActiveEventStore
             "hasn't published anything"
           end
 
-          return expectations.join(' ')
+          return expectations.join(" ")
         end
 
         nil
@@ -133,7 +132,6 @@ module ActiveEventStore
           raise ArgumentError, "Unrecognized expectation kind: #{@count_expectation_kind}"
         end
       end
-
     end
 
     # Asserts that the given event was published `exactly`, `at_least` or `at_most` number of times
@@ -141,29 +139,29 @@ module ActiveEventStore
     def assert_event_published(expected_event, store: nil, with: nil, exactly: nil, at_least: nil, at_most: nil, &block)
       matcher = EventPublishedMatcher.new(
         expected_event,
-        store:    store,
-        with:     with,
-        exactly:  exactly,
+        store: store,
+        with: with,
+        exactly: exactly,
         at_least: at_least,
-        at_most:  at_most,
+        at_most: at_most
       )
 
       if (msg = matcher.matches?(block))
         fail(msg)
       end
 
-      return  matcher.matching_events
+      matcher.matching_events
     end
 
     def refute_event_published(expected_event, store: nil, with: nil, exactly: nil, at_least: nil, at_most: nil, &block)
       matcher = EventPublishedMatcher.new(
         expected_event,
-        store:    store,
-        with:     with,
-        exactly:  exactly,
+        store: store,
+        with: with,
+        exactly: exactly,
         at_least: at_least,
-        at_most:  at_most,
-        refute:   true
+        at_most: at_most,
+        refute: true
       )
 
       if (msg = matcher.matches?(block))
