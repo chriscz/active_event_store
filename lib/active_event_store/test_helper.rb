@@ -46,14 +46,16 @@ module ActiveEventStore
 
         mismatch_message = count_mismatch_message(@matching_events.size)
 
-        unless mismatch_message.nil?
+        if mismatch_message
           expectations = [
             "Expected #{mismatch_message} #{@event_class.identifier}"
           ]
 
           expectations << if refute?
+            report_events = @matching_events
             "not to have been published"
           else
+            report_events = @unmatching_events
             "to have been published"
           end
 
@@ -61,9 +63,9 @@ module ActiveEventStore
 
           expectations << expectations.pop + ", but"
 
-          expectations << if @unmatching_events.any?
-            @unmatching_events.inject("published the following events instead:") do |msg, unmatching_event|
-              msg + "\n  #{unmatching_event.inspect}"
+          expectations << if report_events.any?
+            report_events.inject("published the following events instead:") do |msg, event|
+              msg + "\n  #{event.inspect}"
             end
           else
             "hasn't published anything"
@@ -109,8 +111,8 @@ module ActiveEventStore
       # Partitions events into matching and unmatching
       def partition_events(events)
         events.partition do |actual_event|
-          negate_on_refute((@event_class.identifier == actual_event.event_type) &&
-                             (@attributes.nil? || @attributes.all? { |k, v| v == actual_event.public_send(k) }))
+          (@event_class.identifier == actual_event.event_type) &&
+            (@attributes.nil? || @attributes.all? { |k, v| v == actual_event.public_send(k) })
         end
       end
 
@@ -153,6 +155,8 @@ module ActiveEventStore
       matcher.matching_events
     end
 
+    # Asserts that the given event was *not* published `exactly`, `at_least` or `at_most` number of times
+    # to a specific `store` `with` a particular hash of attributes.
     def refute_event_published(expected_event, store: nil, with: nil, exactly: nil, at_least: nil, at_most: nil, &block)
       matcher = EventPublishedMatcher.new(
         expected_event,
