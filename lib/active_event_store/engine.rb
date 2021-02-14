@@ -15,8 +15,19 @@ module ActiveEventStore
     end
 
     config.to_prepare do
+      ActiveEventStore.reset_event_store!
+      ActiveSupport.run_load_hooks(:active_event_store, ActiveEventStore)
+    end
+  end
+
+  class << self
+    def reset_event_store!
+      ActiveEventStore.event_store = ActiveEventStore.new_event_store
+    end
+
+    def new_event_store
       # See https://railseventstore.org/docs/subscribe/#scheduling-async-handlers-after-commit
-      ActiveEventStore.event_store = RailsEventStore::Client.new(
+      RailsEventStore::Client.new(
         dispatcher: RubyEventStore::ComposedDispatcher.new(
           RailsEventStore::AfterCommitAsyncDispatcher.new(scheduler: RailsEventStore::ActiveJobScheduler.new),
           RubyEventStore::Dispatcher.new
@@ -25,8 +36,6 @@ module ActiveEventStore
         mapper: ActiveEventStore::Mapper.new(mapping: ActiveEventStore.mapping),
         **ActiveEventStore.config.store_options
       )
-
-      ActiveSupport.run_load_hooks(:active_event_store, ActiveEventStore)
     end
   end
 end
